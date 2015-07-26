@@ -491,6 +491,12 @@ int Buffer_EscapeStringValidated (JSOBJ obj, JSONObjectEncoder *enc, const char 
 #define Buffer_AppendCharUnchecked(__enc, __chr) \
                 *((__enc)->offset++) = __chr; \
 
+
+#define Buffer_AppendStrUnchecked(__enc, __str) \
+                memcpy(__enc->offset, __str, strlen(__str)); \
+                __enc->offset += strlen(__str); \
+
+
 FASTCALL_ATTR INLINE_PREFIX void FASTCALL_MSVC strreverse(char* begin, char* end)
 {
   char aux;
@@ -573,16 +579,10 @@ int Buffer_AppendDoubleUnchecked(JSOBJ obj, JSONObjectEncoder *enc, double value
   int neg;
   double pow10;
 
-  if (value == HUGE_VAL || value == -HUGE_VAL)
+  if (value == HUGE_VAL || value == -HUGE_VAL || !(value == value))
   {
-    SetError (obj, enc, "Invalid Inf value when encoding double");
-    return FALSE;
-  }
-
-  if (!(value == value))
-  {
-    SetError (obj, enc, "Invalid Nan value when encoding double");
-    return FALSE;
+    Buffer_AppendStrUnchecked(enc, "null");
+    return TRUE;
   }
 
   /* we'll work in positive values and deal with the
@@ -859,30 +859,19 @@ void encode(JSOBJ obj, JSONObjectEncoder *enc, const char *name, size_t cbName)
 
   case JT_TRUE:
   {
-    Buffer_AppendCharUnchecked (enc, 't');
-    Buffer_AppendCharUnchecked (enc, 'r');
-    Buffer_AppendCharUnchecked (enc, 'u');
-    Buffer_AppendCharUnchecked (enc, 'e');
+    Buffer_AppendStrUnchecked(enc, "true");
     break;
   }
 
   case JT_FALSE:
   {
-    Buffer_AppendCharUnchecked (enc, 'f');
-    Buffer_AppendCharUnchecked (enc, 'a');
-    Buffer_AppendCharUnchecked (enc, 'l');
-    Buffer_AppendCharUnchecked (enc, 's');
-    Buffer_AppendCharUnchecked (enc, 'e');
+    Buffer_AppendStrUnchecked(enc, "false");
     break;
   }
 
-
   case JT_NULL:
   {
-    Buffer_AppendCharUnchecked (enc, 'n');
-    Buffer_AppendCharUnchecked (enc, 'u');
-    Buffer_AppendCharUnchecked (enc, 'l');
-    Buffer_AppendCharUnchecked (enc, 'l');
+    Buffer_AppendStrUnchecked(enc, "null");
     break;
   }
 
